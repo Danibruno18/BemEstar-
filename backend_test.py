@@ -88,11 +88,13 @@ class BackendTester:
     
     def test_patient_registration(self):
         """Teste: Registro de paciente"""
+        import time
+        timestamp = str(int(time.time()))
         data = {
-            "username": "joao_santos",
+            "username": f"joao_santos_{timestamp}",
             "password": "senha456",
             "name": "João Santos",
-            "email": "joao.santos@email.com",
+            "email": f"joao.santos.{timestamp}@email.com",
             "role": "patient"
         }
         
