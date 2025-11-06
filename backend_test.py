@@ -115,8 +115,11 @@ class BackendTester:
     
     def test_psychologist_login(self):
         """Teste: Login de psicólogo"""
+        # Use the same username from registration
+        import time
+        timestamp = str(int(time.time()))
         data = {
-            "username": "dra_maria_silva",
+            "username": f"dra_maria_silva_{timestamp}",
             "password": "senha123"
         }
         
