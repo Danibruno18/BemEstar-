@@ -39,17 +39,20 @@ class BackendTester:
         url = f"{self.base_url}{endpoint}"
         try:
             if method == "GET":
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, timeout=30)
             elif method == "POST":
-                response = requests.post(url, json=data, headers=headers)
+                response = requests.post(url, json=data, headers=headers, timeout=30)
             elif method == "PUT":
-                response = requests.put(url, json=data, headers=headers)
+                response = requests.put(url, json=data, headers=headers, timeout=30)
             elif method == "DELETE":
-                response = requests.delete(url, headers=headers)
+                response = requests.delete(url, headers=headers, timeout=30)
             
             return response
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print(f"Erro na requisição {method} {url}: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"Erro inesperado na requisição {method} {url}: {str(e)}")
             return None
     
     def get_auth_headers(self, token):
