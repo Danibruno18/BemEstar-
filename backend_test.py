@@ -61,11 +61,13 @@ class BackendTester:
     
     def test_psychologist_registration(self):
         """Teste: Registro de psicólogo"""
+        import time
+        timestamp = str(int(time.time()))
         data = {
-            "username": "dra_maria_silva",
+            "username": f"dra_maria_silva_{timestamp}",
             "password": "senha123",
             "name": "Dra. Maria Silva",
-            "email": "maria.silva@psicologo.com",
+            "email": f"maria.silva.{timestamp}@psicologo.com",
             "role": "psychologist"
         }
         
