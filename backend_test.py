@@ -19,6 +19,23 @@ class BackendTester:
         self.patient_token = None
         self.created_form_id = None
         self.test_results = []
+        # Store credentials for reuse
+        import time
+        timestamp = str(int(time.time()))
+        self.psychologist_credentials = {
+            "username": f"dra_maria_silva_{timestamp}",
+            "password": "senha123",
+            "name": "Dra. Maria Silva",
+            "email": f"maria.silva.{timestamp}@psicologo.com",
+            "role": "psychologist"
+        }
+        self.patient_credentials = {
+            "username": f"joao_santos_{timestamp}",
+            "password": "senha456", 
+            "name": "João Santos",
+            "email": f"joao.santos.{timestamp}@email.com",
+            "role": "patient"
+        }
         
     def log_test(self, test_name, success, details=""):
         """Log do resultado do teste"""
