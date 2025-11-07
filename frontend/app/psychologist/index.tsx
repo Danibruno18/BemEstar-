@@ -60,13 +60,21 @@ export default function PsychologistHome() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await axios.delete(`${EXPO_PUBLIC_BACKEND_URL}/api/forms/${formId}`, {
+              console.log('Deletando formulário:', formId);
+              console.log('Token:', token ? 'Presente' : 'Ausente');
+              console.log('URL:', `${EXPO_PUBLIC_BACKEND_URL}/api/forms/${formId}`);
+              
+              const response = await axios.delete(`${EXPO_PUBLIC_BACKEND_URL}/api/forms/${formId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              loadForms();
+              
+              console.log('Resposta da exclusão:', response.status);
+              await loadForms();
               Alert.alert('Sucesso', 'Formulário excluído com sucesso');
-            } catch (error) {
-              Alert.alert('Erro', 'Falha ao excluir formulário');
+            } catch (error: any) {
+              console.error('Erro ao deletar:', error);
+              console.error('Detalhes:', error.response?.data);
+              Alert.alert('Erro', error.response?.data?.detail || 'Falha ao excluir formulário');
             }
           },
         },
