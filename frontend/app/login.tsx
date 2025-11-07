@@ -22,18 +22,26 @@ export default function Login() {
   const router = useRouter();
 
   const handleLogin = async () => {
+    console.log('handleLogin chamado');
+    console.log('Username:', username);
+    console.log('Password presente:', !!password);
+    
     if (!username || !password) {
       Alert.alert('Erro', 'Por favor, preencha todos os campos');
       return;
     }
 
     setIsLoading(true);
+    console.log('Chamando função login...');
     try {
       await login(username, password);
+      console.log('Login bem-sucedido!');
     } catch (error: any) {
-      Alert.alert('Erro', error.message);
+      console.error('Erro no login:', error);
+      Alert.alert('Erro', error.message || 'Falha ao fazer login');
     } finally {
       setIsLoading(false);
+      console.log('Loading finalizado');
     }
   };
 
