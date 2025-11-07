@@ -1,24 +1,29 @@
 diff --git a/model.patch b/model.patch
-index 7190c00..e69de29 100644
+index 0f45373..e69de29 100644
 --- a/model.patch
 +++ b/model.patch
-@@ -1,19 +0,0 @@
--diff --git a/frontend/app/_layout.tsx b/frontend/app/_layout.tsx
--index ef4e5d1..f84bf49 100644
----- a/frontend/app/_layout.tsx
--+++ b/frontend/app/_layout.tsx
--@@ -5,13 +5,7 @@ import { AuthProvider } from '../contexts/AuthContext';
-- export default function RootLayout() {
--   return (
--     <AuthProvider>
---      <Stack screenOptions={{ headerShown: false }}>
---        <Stack.Screen name="index" />
---        <Stack.Screen name="login" />
---        <Stack.Screen name="register" />
---        <Stack.Screen name="psychologist" />
---        <Stack.Screen name="patient" />
---      </Stack>
--+      <Stack screenOptions={{ headerShown: false }} />
--     </AuthProvider>
--   );
-- }
+@@ -1,24 +0,0 @@
+-diff --git a/model.patch b/model.patch
+-index 7190c00..e69de29 100644
+---- a/model.patch
+-+++ b/model.patch
+-@@ -1,19 +0,0 @@
+--diff --git a/frontend/app/_layout.tsx b/frontend/app/_layout.tsx
+--index ef4e5d1..f84bf49 100644
+----- a/frontend/app/_layout.tsx
+--+++ b/frontend/app/_layout.tsx
+--@@ -5,13 +5,7 @@ import { AuthProvider } from '../contexts/AuthContext';
+-- export default function RootLayout() {
+--   return (
+--     <AuthProvider>
+---      <Stack screenOptions={{ headerShown: false }}>
+---        <Stack.Screen name="index" />
+---        <Stack.Screen name="login" />
+---        <Stack.Screen name="register" />
+---        <Stack.Screen name="psychologist" />
+---        <Stack.Screen name="patient" />
+---      </Stack>
+--+      <Stack screenOptions={{ headerShown: false }} />
+--     </AuthProvider>
+--   );
+-- }
