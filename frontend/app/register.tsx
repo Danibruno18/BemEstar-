@@ -30,11 +30,24 @@ export default function Register() {
       return;
     }
 
+    if (username.length < 3) {
+      Alert.alert('Erro', 'Usuário deve ter no mínimo 3 caracteres');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Erro', 'Senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('Iniciando cadastro...');
       await register(username, password, name, email, role);
+      console.log('Cadastro concluído!');
     } catch (error: any) {
-      Alert.alert('Erro', error.message);
+      console.error('Erro no cadastro:', error);
+      Alert.alert('Erro no Cadastro', error.message || 'Não foi possível criar a conta');
     } finally {
       setIsLoading(false);
     }
