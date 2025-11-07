@@ -50,20 +50,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
+      console.log('AuthContext.login: Iniciando login');
+      console.log('URL Backend:', EXPO_PUBLIC_BACKEND_URL);
+      console.log('Username:', username);
+      
       const response = await axios.post(`${EXPO_PUBLIC_BACKEND_URL}/api/auth/login`, {
         username,
         password,
       });
 
+      console.log('Resposta recebida, status:', response.status);
       const { access_token, user: userData } = response.data;
+      
+      console.log('Token recebido:', access_token ? 'Sim' : 'Não');
+      console.log('Dados do usuário:', userData);
       
       await AsyncStorage.setItem('token', access_token);
       await AsyncStorage.setItem('user', JSON.stringify(userData));
       
       setToken(access_token);
       setUser(userData);
+      
+      console.log('Login concluído com sucesso!');
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Login failed');
+      console.error('Erro no AuthContext.login:', error);
+      console.error('Detalhes do erro:', error.response?.data);
+      console.error('Status do erro:', error.response?.status);
+      throw new Error(error.response?.data?.detail || 'Falha ao fazer login. Verifique suas credenciais.');
     }
   };
 
