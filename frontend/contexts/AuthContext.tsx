@@ -69,6 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (username: string, password: string, name: string, email: string, role: string) => {
     try {
+      console.log('Tentando registrar com URL:', EXPO_PUBLIC_BACKEND_URL);
+      console.log('Dados:', { username, name, email, role });
+      
       const response = await axios.post(`${EXPO_PUBLIC_BACKEND_URL}/api/auth/register`, {
         username,
         password,
@@ -77,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role,
       });
 
+      console.log('Resposta recebida:', response.status);
       const { access_token, user: userData } = response.data;
       
       await AsyncStorage.setItem('token', access_token);
@@ -84,8 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setToken(access_token);
       setUser(userData);
+      console.log('Registro bem-sucedido!');
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Registration failed');
+      console.error('Erro no registro:', error);
+      console.error('Detalhes:', error.response?.data);
+      throw new Error(error.response?.data?.detail || 'Falha ao cadastrar. Verifique os dados e tente novamente.');
     }
   };
 
