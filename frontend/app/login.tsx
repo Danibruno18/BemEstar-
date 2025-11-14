@@ -164,6 +164,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonPressed: {
+    opacity: 0.8,
+  },
   buttonDisabled: {
     opacity: 0.6,
   },
