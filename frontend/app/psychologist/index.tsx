@@ -224,6 +224,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
   list: {
     padding: 16,
   },
