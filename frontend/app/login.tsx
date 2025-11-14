@@ -79,22 +79,29 @@ export default function Login() {
                 />
               </View>
 
-              <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  isLoading && styles.buttonDisabled,
+                  pressed && styles.buttonPressed
+                ]}
                 onPress={handleLogin}
                 disabled={isLoading}
               >
                 <Text style={styles.buttonText}>
                   {isLoading ? 'Entrando...' : 'Entrar'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
-                style={styles.linkButton}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.linkButton,
+                  pressed && { opacity: 0.7 }
+                ]}
                 onPress={() => router.push('/register')}
               >
                 <Text style={styles.linkText}>Não tem uma conta? Cadastre-se</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </ScrollView>
