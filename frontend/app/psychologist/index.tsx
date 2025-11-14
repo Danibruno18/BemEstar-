@@ -160,7 +160,13 @@ export default function PsychologistHome() {
           <Text style={styles.headerTitle}>Meus Questionários</Text>
           <Text style={styles.headerSubtitle}>Olá, {user?.name}</Text>
         </View>
-        <Pressable onPress={handleLogout}>
+        <Pressable 
+          onPress={handleLogout}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            pressed && { opacity: 0.6 }
+          ]}
+        >
           <Ionicons name="log-out-outline" size={24} color="#007AFF" />
         </Pressable>
       </View>
