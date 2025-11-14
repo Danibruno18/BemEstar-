@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -112,7 +112,7 @@ export default function Register() {
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Tipo de Conta</Text>
                 <View style={styles.roleContainer}>
-                  <TouchableOpacity
+                  <Pressable
                     style={[
                       styles.roleButton,
                       role === 'patient' && styles.roleButtonActive,
@@ -127,9 +127,9 @@ export default function Register() {
                     >
                       Paciente
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
 
-                  <TouchableOpacity
+                  <Pressable
                     style={[
                       styles.roleButton,
                       role === 'psychologist' && styles.roleButtonActive,
@@ -144,11 +144,11 @@ export default function Register() {
                     >
                       Psicólogo
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 style={[styles.button, isLoading && styles.buttonDisabled]}
                 onPress={handleRegister}
                 disabled={isLoading}
@@ -156,14 +156,14 @@ export default function Register() {
                 <Text style={styles.buttonText}>
                   {isLoading ? 'Cadastrando...' : 'Cadastrar'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 style={styles.linkButton}
                 onPress={() => router.back()}
               >
                 <Text style={styles.linkText}>Já tem uma conta? Faça login</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </ScrollView>

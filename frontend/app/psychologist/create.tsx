@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -97,9 +97,9 @@ export default function CreateForm() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <Pressable onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
+          </Pressable>
           <Text style={styles.headerTitle}>Novo Questionário</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -130,19 +130,19 @@ export default function CreateForm() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Perguntas</Text>
-              <TouchableOpacity style={styles.addButton} onPress={addQuestion}>
+              <Pressable style={styles.addButton} onPress={addQuestion}>
                 <Ionicons name="add-circle" size={24} color="#007AFF" />
                 <Text style={styles.addButtonText}>Adicionar</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {questions.map((question, index) => (
               <View key={question.id} style={styles.questionCard}>
                 <View style={styles.questionHeader}>
                   <Text style={styles.questionNumber}>Pergunta {index + 1}</Text>
-                  <TouchableOpacity onPress={() => removeQuestion(question.id)}>
+                  <Pressable onPress={() => removeQuestion(question.id)}>
                     <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
                 <TextInput
                   style={[styles.input, styles.questionInput]}
@@ -164,7 +164,7 @@ export default function CreateForm() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <TouchableOpacity
+          <Pressable
             style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={isLoading}
@@ -172,7 +172,7 @@ export default function CreateForm() {
             <Text style={styles.submitButtonText}>
               {isLoading ? 'Criando...' : 'Criar Questionário'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

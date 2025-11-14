@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -137,9 +137,9 @@ export default function AnswerForm() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <Pressable onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
+          </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {form.title}
           </Text>
@@ -176,7 +176,7 @@ export default function AnswerForm() {
               {form.questions.length} respondidas
             </Text>
           </View>
-          <TouchableOpacity
+          <Pressable
             style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={isSubmitting}
@@ -184,7 +184,7 @@ export default function AnswerForm() {
             <Text style={styles.submitButtonText}>
               {isSubmitting ? 'Enviando...' : 'Enviar Respostas'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

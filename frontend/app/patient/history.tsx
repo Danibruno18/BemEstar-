@@ -3,7 +3,7 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -86,7 +86,7 @@ export default function PatientHistory() {
 
     return (
       <View style={styles.card}>
-        <TouchableOpacity onPress={() => toggleExpand(item.id)}>
+        <Pressable onPress={() => toggleExpand(item.id)}>
           <View style={styles.cardHeader}>
             <View style={styles.responseInfo}>
               <Ionicons name="document-text" size={28} color="#007AFF" />
@@ -107,7 +107,7 @@ export default function PatientHistory() {
               color="#666"
             />
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
         {isExpanded && (
           <View style={styles.answersContainer}>
@@ -138,21 +138,21 @@ export default function PatientHistory() {
           <Text style={styles.headerTitle}>Minhas Respostas</Text>
           <Text style={styles.headerSubtitle}>Olá, {user?.name}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout}>
+        <Pressable onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity style={styles.tab} onPress={() => router.push('/patient')}>
+        <Pressable style={styles.tab} onPress={() => router.push('/patient')}>
           <Text style={styles.tabText}>Disponíveis</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={[styles.tab, styles.tabActive]}
           onPress={() => router.push('/patient/history')}
         >
           <Text style={[styles.tabText, styles.tabTextActive]}>Minhas Respostas</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <FlatList

@@ -3,7 +3,7 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -75,7 +75,7 @@ export default function FormResponses() {
 
     return (
       <View style={styles.card}>
-        <TouchableOpacity onPress={() => toggleExpand(item.id)}>
+        <Pressable onPress={() => toggleExpand(item.id)}>
           <View style={styles.cardHeader}>
             <View style={styles.patientInfo}>
               <Ionicons name="person-circle-outline" size={32} color="#007AFF" />
@@ -91,7 +91,7 @@ export default function FormResponses() {
               color="#666"
             />
           </View>
-        </TouchableOpacity>
+        </Pressable>
 
         {isExpanded && (
           <View style={styles.answersContainer}>
@@ -118,9 +118,9 @@ export default function FormResponses() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Respostas</Text>
         <View style={{ width: 24 }} />
       </View>

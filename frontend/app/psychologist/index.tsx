@@ -3,7 +3,7 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -118,29 +118,29 @@ export default function PsychologistHome() {
       </View>
 
       <View style={styles.cardActions}>
-        <TouchableOpacity
+        <Pressable
           style={styles.actionButton}
           onPress={() => router.push(`/psychologist/responses?id=${item.id}`)}
         >
           <Ionicons name="eye-outline" size={20} color="#007AFF" />
           <Text style={styles.actionButtonText}>Ver Respostas</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           style={styles.actionButton}
           onPress={() => router.push(`/psychologist/edit?id=${item.id}`)}
         >
           <Ionicons name="pencil-outline" size={20} color="#007AFF" />
           <Text style={styles.actionButtonText}>Editar</Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
+        <Pressable
           style={styles.actionButton}
           onPress={() => handleDelete(item.id)}
         >
           <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>Excluir</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -160,9 +160,9 @@ export default function PsychologistHome() {
           <Text style={styles.headerTitle}>Meus Questionários</Text>
           <Text style={styles.headerSubtitle}>Olá, {user?.name}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout}>
+        <Pressable onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <FlatList
@@ -179,12 +179,12 @@ export default function PsychologistHome() {
         }
       />
 
-      <TouchableOpacity
+      <Pressable
         style={styles.fab}
         onPress={() => router.push('/psychologist/create')}
       >
         <Ionicons name="add" size={32} color="#fff" />
-      </TouchableOpacity>
+      </Pressable>
     </SafeAreaView>
   );
 }

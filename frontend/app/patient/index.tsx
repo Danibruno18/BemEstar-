@@ -3,7 +3,7 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -63,7 +63,7 @@ export default function PatientHome() {
   };
 
   const renderForm = ({ item }: { item: Form }) => (
-    <TouchableOpacity
+    <Pressable
       style={styles.card}
       onPress={() => router.push(`/patient/answer?id=${item.id}`)}
     >
@@ -92,7 +92,7 @@ export default function PatientHome() {
         <Text style={styles.answerButton}>Responder</Text>
         <Ionicons name="chevron-forward" size={20} color="#007AFF" />
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   if (isLoading) {
@@ -110,24 +110,24 @@ export default function PatientHome() {
           <Text style={styles.headerTitle}>Questionários Disponíveis</Text>
           <Text style={styles.headerSubtitle}>Olá, {user?.name}</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout}>
+        <Pressable onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity
+        <Pressable
           style={[styles.tab, styles.tabActive]}
           onPress={() => router.push('/patient')}
         >
           <Text style={[styles.tabText, styles.tabTextActive]}>Disponíveis</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           style={styles.tab}
           onPress={() => router.push('/patient/history')}
         >
           <Text style={styles.tabText}>Minhas Respostas</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <FlatList
