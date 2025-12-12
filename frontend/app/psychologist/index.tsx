@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +31,7 @@ interface Form {
 export default function PsychologistHome() {
   const [forms, setForms] = useState<Form[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const { user, token, logout } = useAuth();
   const router = useRouter();
 
@@ -46,6 +48,14 @@ export default function PsychologistHome() {
     }
     loadForms();
   }, [user, token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!token || user?.role !== 'psychologist') return;
+      setIsLoading(true);
+      loadForms();
+    }, [token, user])
+  );
 
   const loadForms = async () => {
     try {
@@ -65,6 +75,24 @@ export default function PsychologistHome() {
   };
 
   const handleDelete = async (formId: string) => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Tem certeza que deseja excluir este formulário?');
+      if (!confirmed) return;
+      try {
+        setIsDeletingId(formId);
+        const response = await axios.delete(`${BASE_URL}/api/forms/${formId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        await loadForms();
+        window.alert('Formulário excluído com sucesso');
+      } catch (error: any) {
+        const msg = error?.response?.data?.detail || 'Falha ao excluir formulário';
+        window.alert(msg);
+      } finally {
+        setIsDeletingId(null);
+      }
+      return;
+    }
     Alert.alert(
       'Confirmar Exclusão',
       'Tem certeza que deseja excluir este formulário?',
@@ -75,21 +103,17 @@ export default function PsychologistHome() {
           style: 'destructive',
           onPress: async () => {
             try {
-              console.log('Deletando formulário:', formId);
-              console.log('Token:', token ? 'Presente' : 'Ausente');
-              console.log('URL:', `${BASE_URL}/api/forms/${formId}`);
-              
+              setIsDeletingId(formId);
               const response = await axios.delete(`${BASE_URL}/api/forms/${formId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              
-              console.log('Resposta da exclusão:', response.status);
               await loadForms();
               Alert.alert('Sucesso', 'Formulário excluído com sucesso');
             } catch (error: any) {
-              console.error('Erro ao deletar:', error);
-              console.error('Detalhes:', error.response?.data);
-              Alert.alert('Erro', error.response?.data?.detail || 'Falha ao excluir formulário');
+              const msg = error?.response?.data?.detail || 'Falha ao excluir formulário';
+              Alert.alert('Erro', msg);
+            } finally {
+              setIsDeletingId(null);
             }
           },
         },
@@ -159,8 +183,9 @@ export default function PsychologistHome() {
         </Pressable>
 
         <Pressable
-          style={styles.actionButton}
+          style={[styles.actionButton, isDeletingId === item.id && { opacity: 0.5 }]}
           onPress={() => handleDelete(item.id)}
+          disabled={isDeletingId === item.id}
         >
           <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           <Text style={[styles.actionButtonText, { color: '#FF3B30' }]}>Excluir</Text>
