@@ -242,6 +242,7 @@ async def register(user_data: UserRegister):
         "name": user_data.name,
         "email": user_data.email,
         "role": user_data.role,
+        "isPatient": is_patient_role(user_data.role),
         "createdAt": datetime.utcnow(),
         "_id": user_id
     }
@@ -315,7 +316,13 @@ async def create_form(form_data: FormCreate, current_user: dict = Depends(get_cu
         "createdBy": str(current_user["_id"]),
         "createdAt": datetime.utcnow(),
         "updatedAt": datetime.utcnow(),
-        "assignedPatients": [pid for pid in (form_data.assignedPatientIds or []) if is_patient_role(db.users.get(pid, {}).get("role"))],
+        "assignedPatients": [
+            pid for pid in (form_data.assignedPatientIds or [])
+            if (
+                is_patient_role(db.users.get(pid, {}).get("role"))
+                or bool(db.users.get(pid, {}).get("isPatient"))
+            )
+        ],
         "_id": form_id
     }
     db.forms[form_id] = form
@@ -395,7 +402,13 @@ async def update_form(form_id: str, form_data: FormUpdate, current_user: dict = 
     if form_data.questions is not None:
         update_data["questions"] = [q.dict() for q in form_data.questions]
     if form_data.assignedPatientIds is not None:
-        update_data["assignedPatients"] = [pid for pid in (form_data.assignedPatientIds or []) if is_patient_role(db.users.get(pid, {}).get("role"))]
+        update_data["assignedPatients"] = [
+            pid for pid in (form_data.assignedPatientIds or [])
+            if (
+                is_patient_role(db.users.get(pid, {}).get("role"))
+                or bool(db.users.get(pid, {}).get("isPatient"))
+            )
+        ]
     
     db.forms[form_id].update(update_data)
     updated_form = db.forms.get(form_id)
@@ -533,16 +546,7 @@ async def get_my_responses(current_user: dict = Depends(get_current_user)):
     
     return result
 
-# Include the router
-app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# NOTE: router inclusion and middleware registration moved to end of file
 
 logging.basicConfig(
     level=logging.INFO,
@@ -564,6 +568,17 @@ async def list_patients(current_user: dict = Depends(get_current_user)):
             "email": u.get("email"),
             "username": u.get("username"),
         }
-        for u in db.users.values() if is_patient_role(u.get("role"))
+        for u in db.users.values() if is_patient_role(u.get("role")) or bool(u.get("isPatient"))
     ]
     return patients
+
+# Include the router and middleware at the end, after all routes have been defined
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

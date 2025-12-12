@@ -35,7 +35,8 @@ export default function EditForm() {
   const [patients, setPatients] = useState<Array<{ id: string; name: string; email: string; username: string }>>([]);
   const [assignedPatientIds, setAssignedPatientIds] = useState<string[]>([]);
   const [patientQuery, setPatientQuery] = useState('');
-  const { token } = useAuth();
+  const [patientsError, setPatientsError] = useState('');
+  const { token, user } = useAuth();
   const router = useRouter();
 
   const goBackOrHome = () => {
@@ -72,9 +73,17 @@ export default function EditForm() {
   const loadPatients = async () => {
     try {
       const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      if (!token) return;
+      setPatientsError('');
       const res = await axios.get(`${baseUrl}/api/patients`, { headers: { Authorization: `Bearer ${token}` } });
       setPatients(res.data);
-    } catch (error) {}
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const detail = error?.response?.data?.detail;
+      const msg = detail || (status === 403 ? 'Apenas psicólogos podem listar pacientes' : 'Falha ao carregar pacientes');
+      setPatientsError(msg);
+      setPatients([]);
+    }
   };
 
   const toggleAssign = (pid: string) => {
@@ -214,6 +223,15 @@ export default function EditForm() {
           </View>
           <View style={styles.section}>
             <Text style={styles.label}>Selecione Pacientes</Text>
+            {patientsError ? (
+              <Text style={{ color: '#d00', marginBottom: 8 }}>{patientsError}</Text>
+            ) : null}
+            {user?.role !== 'psychologist' ? (
+              <View style={styles.centered}>
+                <Ionicons name="lock-closed-outline" size={48} color="#ccc" />
+                <Text style={{ color: '#999', marginTop: 8 }}>Apenas psicólogos podem selecionar pacientes</Text>
+              </View>
+            ) : null}
             <TextInput
               style={[styles.input, styles.searchInput]}
               value={patientQuery}

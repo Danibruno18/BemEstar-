@@ -34,8 +34,18 @@ export default function PsychologistHome() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!token) return;
+    if (user?.role !== 'psychologist') {
+      if (Platform.OS === 'web') {
+        window.alert('Acesso restrito a psicólogos');
+      } else {
+        Alert.alert('Acesso restrito', 'Esta área é apenas para psicólogos');
+      }
+      router.replace('/patient');
+      return;
+    }
     loadForms();
-  }, []);
+  }, [user, token]);
 
   const loadForms = async () => {
     try {
@@ -43,9 +53,12 @@ export default function PsychologistHome() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setForms(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading forms:', error);
-      Alert.alert('Erro', 'Falha ao carregar formulários');
+      const detail = error?.response?.data?.detail;
+      const status = error?.response?.status;
+      const msg = detail || (status ? `Falha ao carregar (status ${status})` : 'Falha ao carregar formulários');
+      Alert.alert('Erro', msg);
     } finally {
       setIsLoading(false);
     }

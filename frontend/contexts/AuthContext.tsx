@@ -10,7 +10,7 @@ interface User {
   username: string;
   name: string;
   email: string;
-  role: 'psychologist' | 'patient';
+  role: 'psychologist' | 'patient' | 'patiente';
 }
 
 interface AuthContextType {

@@ -16,5 +16,14 @@
         "role": "patient",
         "createdAt": "2025-12-12T04:35:48.500054",
         "_id": "71a80ae1ffda47a2b28787c801445df6"
+    },
+    "eb26fb82665d494ab9ecdf256d0a6857": {
+        "username": "cris",
+        "password": "$2b$12$FQHoxs9BhldSFQsuzRWrx.bvMIGhxmvlFty49fztoiUrPxuB4pY3e",
+        "name": "cristiane",
+        "email": "cris@gmail",
+        "role": "patient",
+        "createdAt": "2025-12-12T05:21:46.166139",
+        "_id": "eb26fb82665d494ab9ecdf256d0a6857"
     }
 }
