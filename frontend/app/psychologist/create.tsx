@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -29,8 +29,37 @@ export default function CreateForm() {
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [patients, setPatients] = useState<{ id: string; name: string; email: string; username: string }[]>([]);
+  const [assignedPatientIds, setAssignedPatientIds] = useState<string[]>([]);
+  const [patientQuery, setPatientQuery] = useState('');
   const { token } = useAuth();
   const router = useRouter();
+
+  const goBackOrHome = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/psychologist');
+    }
+  };
+
+  useEffect(() => {
+    const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    const loadPatients = async () => {
+      try {
+        const res = await axios.get(`${baseUrl}/api/patients`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPatients(res.data);
+      } catch (error) {}
+    };
+    loadPatients();
+  }, [token]);
+
+  const toggleAssign = (id: string) => {
+    setAssignedPatientIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
 
   const addQuestion = () => {
     const newQuestion: Question = {
@@ -50,6 +79,7 @@ export default function CreateForm() {
   };
 
   const handleSubmit = async () => {
+    if (hasSubmitted) return;
     if (!title.trim()) {
       Alert.alert('Erro', 'Por favor, digite um título');
       return;
@@ -66,27 +96,52 @@ export default function CreateForm() {
       return;
     }
 
+    const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+    if (!token) {
+      if (Platform.OS === 'web') {
+        window.alert('Sessão expirada. Faça login novamente');
+      } else {
+        Alert.alert('Sessão expirada', 'Faça login novamente');
+      }
+      router.replace('/login');
+      return;
+    }
+
     setIsLoading(true);
+    setHasSubmitted(true);
     try {
       await axios.post(
-        `${EXPO_PUBLIC_BACKEND_URL}/api/forms`,
+        `${baseUrl}/api/forms`,
         {
           title,
           description,
           questions,
+          assignedPatientIds,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      Alert.alert('Sucesso', 'Questionário criado com sucesso', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (error) {
-      Alert.alert('Erro', 'Falha ao criar questionário');
+      if (Platform.OS === 'web') {
+        window.alert('Questionário criado com sucesso');
+        goBackOrHome();
+      } else {
+        Alert.alert('Sucesso', 'Questionário criado com sucesso', [
+          { text: 'OK', onPress: () => goBackOrHome() },
+        ]);
+      }
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      if (Platform.OS === 'web') {
+        window.alert(detail || 'Falha ao criar questionário');
+      } else {
+        Alert.alert('Erro', detail || 'Falha ao criar questionário');
+      }
     } finally {
       setIsLoading(false);
+      setHasSubmitted(false);
     }
   };
 
@@ -97,7 +152,7 @@ export default function CreateForm() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={goBackOrHome}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </Pressable>
           <Text style={styles.headerTitle}>Novo Questionário</Text>
@@ -158,6 +213,43 @@ export default function CreateForm() {
               <View style={styles.emptyQuestions}>
                 <Ionicons name="help-circle-outline" size={48} color="#ccc" />
                 <Text style={styles.emptyText}>Nenhuma pergunta adicionada</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.section}>
+            <Text style={styles.label}>Selecione Pacientes</Text>
+            <TextInput
+              style={[styles.input, styles.searchInput]}
+              value={patientQuery}
+              onChangeText={setPatientQuery}
+              placeholder="Buscar por nome ou email"
+            />
+            {patients.length === 0 ? (
+              <View style={styles.emptyQuestions}>
+                <Ionicons name="people-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>Nenhum paciente encontrado</Text>
+              </View>
+            ) : (
+              <View>
+                {patients
+                  .filter(
+                    (p) =>
+                      p.name.toLowerCase().includes(patientQuery.toLowerCase()) ||
+                      p.email.toLowerCase().includes(patientQuery.toLowerCase())
+                  )
+                  .map((p) => (
+                    <Pressable key={p.id} onPress={() => toggleAssign(p.id)} style={styles.checkboxRow}>
+                      <Ionicons
+                        name={assignedPatientIds.includes(p.id) ? 'checkbox-outline' : 'square-outline'}
+                        size={22}
+                        color={assignedPatientIds.includes(p.id) ? '#007AFF' : '#666'}
+                      />
+                      <View style={{ marginLeft: 8 }}>
+                        <Text style={styles.checkboxLabel}>{p.name}</Text>
+                        <Text style={{ color: '#777', fontSize: 12 }}>{p.email}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
               </View>
             )}
           </View>
@@ -279,6 +371,9 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 8,
   },
+  searchInput: {
+    marginBottom: 12,
+  },
   footer: {
     padding: 16,
     backgroundColor: '#fff',
@@ -298,5 +393,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  checkboxLabel: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

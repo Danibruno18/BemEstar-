@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 interface User {
   id: string;
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('URL Backend:', EXPO_PUBLIC_BACKEND_URL);
       console.log('Username:', username);
       
-      const response = await axios.post(`${EXPO_PUBLIC_BACKEND_URL}/api/auth/login`, {
+      const response = await axios.post(`${BASE_URL}/api/auth/login`, {
         username,
         password,
       });
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Tentando registrar com URL:', EXPO_PUBLIC_BACKEND_URL);
       console.log('Dados:', { username, name, email, role });
       
-      const response = await axios.post(`${EXPO_PUBLIC_BACKEND_URL}/api/auth/register`, {
+      const response = await axios.post(`${BASE_URL}/api/auth/register`, {
         username,
         password,
         name,

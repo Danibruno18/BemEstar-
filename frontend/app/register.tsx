@@ -45,6 +45,11 @@ export default function Register() {
       console.log('Iniciando cadastro...');
       await register(username, password, name, email, role);
       console.log('Cadastro concluído!');
+      if (role === 'patient') {
+        router.replace('/patient');
+      } else {
+        router.replace('/psychologist');
+      }
     } catch (error: any) {
       console.error('Erro no cadastro:', error);
       Alert.alert('Erro no Cadastro', error.message || 'Não foi possível criar a conta');

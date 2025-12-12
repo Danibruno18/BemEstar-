@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 interface Question {
   id: string;
@@ -53,12 +54,16 @@ export default function AnswerForm() {
 
   const loadForm = async () => {
     try {
-      const response = await axios.get(`${EXPO_PUBLIC_BACKEND_URL}/api/forms/${id}`, {
+      const response = await axios.get(`${BASE_URL}/api/forms/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setForm(response.data);
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao carregar questionário');
+      if (Platform.OS === 'web') {
+        window.alert('Falha ao carregar questionário');
+      } else {
+        Alert.alert('Erro', 'Falha ao carregar questionário');
+      }
       router.back();
     } finally {
       setIsLoading(false);
@@ -75,7 +80,43 @@ export default function AnswerForm() {
     // Check if all questions are answered
     const unanswered = form.questions.filter((q) => !answers[q.id] || !answers[q.id].trim());
     if (unanswered.length > 0) {
-      Alert.alert('Erro', 'Por favor, responda todas as perguntas antes de enviar');
+      if (Platform.OS === 'web') {
+        window.alert('Por favor, responda todas as perguntas antes de enviar');
+      } else {
+        Alert.alert('Erro', 'Por favor, responda todas as perguntas antes de enviar');
+      }
+      return;
+    }
+
+    if (!token) {
+      if (Platform.OS === 'web') {
+        window.alert('Sessão expirada. Faça login novamente');
+      } else {
+        Alert.alert('Sessão expirada', 'Faça login novamente');
+      }
+      router.replace('/login');
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Tem certeza que deseja enviar suas respostas? Após o envio não será possível editar.');
+      if (!confirmed) return;
+      setIsSubmitting(true);
+      try {
+        const formattedAnswers: Answer[] = form.questions.map((q) => ({
+          questionId: q.id,
+          questionText: q.text,
+          answerText: answers[q.id],
+        }));
+        await axios.post(`${BASE_URL}/api/responses`, { formId: id, answers: formattedAnswers }, { headers: { Authorization: `Bearer ${token}` } });
+        window.alert('Respostas enviadas com sucesso!');
+        router.push('/patient');
+      } catch (error: any) {
+        const detail = error?.response?.data?.detail;
+        window.alert(detail || 'Falha ao enviar respostas');
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -94,23 +135,13 @@ export default function AnswerForm() {
                 questionText: q.text,
                 answerText: answers[q.id],
               }));
-
-              await axios.post(
-                `${EXPO_PUBLIC_BACKEND_URL}/api/responses`,
-                {
-                  formId: id,
-                  answers: formattedAnswers,
-                },
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                }
-              );
-
+              await axios.post(`${BASE_URL}/api/responses`, { formId: id, answers: formattedAnswers }, { headers: { Authorization: `Bearer ${token}` } });
               Alert.alert('Sucesso', 'Respostas enviadas com sucesso!', [
                 { text: 'OK', onPress: () => router.push('/patient') },
               ]);
-            } catch (error) {
-              Alert.alert('Erro', 'Falha ao enviar respostas');
+            } catch (error: any) {
+              const detail = error?.response?.data?.detail;
+              Alert.alert('Erro', detail || 'Falha ao enviar respostas');
             } finally {
               setIsSubmitting(false);
             }

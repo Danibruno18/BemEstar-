@@ -23,16 +23,16 @@ class BackendTester:
         import time
         timestamp = str(int(time.time()))
         self.psychologist_credentials = {
-            "username": f"dra_maria_silva_{timestamp}",
-            "password": "senha123",
-            "name": "Dra. Maria Silva",
+            "username": f"drbruno{timestamp}",
+            "password": "12345",
+            "name": "Dra. Bruno Daniel",
             "email": f"maria.silva.{timestamp}@psicologo.com",
             "role": "psychologist"
         }
         self.patient_credentials = {
-            "username": f"joao_santos_{timestamp}",
-            "password": "senha456", 
-            "name": "João Santos",
+            "username": f"caio{timestamp}",
+            "password": "12345", 
+            "name": "Caio Daniel",
             "email": f"joao.santos.{timestamp}@email.com",
             "role": "patient"
         }
@@ -81,10 +81,10 @@ class BackendTester:
         import time
         timestamp = str(int(time.time()))
         data = {
-            "username": f"dra_maria_silva_{timestamp}",
-            "password": "senha123",
-            "name": "Dra. Maria Silva",
-            "email": f"maria.silva.{timestamp}@psicologo.com",
+            "username": f"drbruno{timestamp}",
+            "password": "12345",
+            "name": "Dra. Bruno Daniel",
+            "email": f"bruno.daniel.{timestamp}@psicologo.com",
             "role": "psychologist"
         }
         
@@ -108,10 +108,10 @@ class BackendTester:
         import time
         timestamp = str(int(time.time()))
         data = {
-            "username": f"joao_santos_{timestamp}",
-            "password": "senha456",
-            "name": "João Santos",
-            "email": f"joao.santos.{timestamp}@email.com",
+            "username": f"caio{timestamp}",
+            "password": "12345",
+            "name": "Caio Daniel",
+            "email": f"caio.daniel.{timestamp}@email.com",
             "role": "patient"
         }
         
@@ -136,8 +136,8 @@ class BackendTester:
         import time
         timestamp = str(int(time.time()))
         data = {
-            "username": f"dra_maria_silva_{timestamp}",
-            "password": "senha123"
+            "username": f"drbruno{timestamp}",
+            "password": "12345"
         }
         
         response = self.make_request("POST", "/auth/login", data)

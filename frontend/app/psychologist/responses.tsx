@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 interface Answer {
   questionId: string;
@@ -44,7 +45,7 @@ export default function FormResponses() {
 
   const loadResponses = async () => {
     try {
-      const response = await axios.get(`${EXPO_PUBLIC_BACKEND_URL}/api/forms/${id}/responses`, {
+      const response = await axios.get(`${BASE_URL}/api/forms/${id}/responses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setResponses(response.data);

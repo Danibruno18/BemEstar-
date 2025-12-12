@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -69,6 +70,14 @@ export default function PatientHistory() {
   };
 
   const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Deseja realmente sair?');
+      if (confirmed) {
+        await logout();
+        router.replace('/');
+      }
+      return;
+    }
     Alert.alert('Sair', 'Deseja realmente sair?', [
       { text: 'Cancelar', style: 'cancel' },
       {
@@ -76,6 +85,7 @@ export default function PatientHistory() {
         style: 'destructive',
         onPress: async () => {
           await logout();
+          router.replace('/');
         },
       },
     ]);

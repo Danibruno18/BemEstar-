@@ -32,27 +32,53 @@ export default function EditForm() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [patients, setPatients] = useState<Array<{ id: string; name: string; email: string; username: string }>>([]);
+  const [assignedPatientIds, setAssignedPatientIds] = useState<string[]>([]);
+  const [patientQuery, setPatientQuery] = useState('');
   const { token } = useAuth();
   const router = useRouter();
 
+  const goBackOrHome = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/psychologist');
+    }
+  };
+
   useEffect(() => {
     loadForm();
+    loadPatients();
   }, []);
 
   const loadForm = async () => {
     try {
-      const response = await axios.get(`${EXPO_PUBLIC_BACKEND_URL}/api/forms/${id}`, {
+      const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const response = await axios.get(`${baseUrl}/api/forms/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTitle(response.data.title);
       setDescription(response.data.description || '');
       setQuestions(response.data.questions || []);
+      setAssignedPatientIds(response.data.assignedPatients || []);
     } catch (error) {
       Alert.alert('Erro', 'Falha ao carregar formulário');
-      router.back();
+      goBackOrHome();
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadPatients = async () => {
+    try {
+      const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const res = await axios.get(`${baseUrl}/api/patients`, { headers: { Authorization: `Bearer ${token}` } });
+      setPatients(res.data);
+    } catch (error) {}
+  };
+
+  const toggleAssign = (pid: string) => {
+    setAssignedPatientIds((prev) => (prev.includes(pid) ? prev.filter((x) => x !== pid) : [...prev, pid]));
   };
 
   const addQuestion = () => {
@@ -97,6 +123,7 @@ export default function EditForm() {
           title,
           description,
           questions,
+          assignedPatientIds,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -104,7 +131,7 @@ export default function EditForm() {
       );
 
       Alert.alert('Sucesso', 'Questionário atualizado com sucesso', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: () => goBackOrHome() },
       ]);
     } catch (error) {
       Alert.alert('Erro', 'Falha ao atualizar questionário');
@@ -128,7 +155,7 @@ export default function EditForm() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={goBackOrHome}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </Pressable>
           <Text style={styles.headerTitle}>Editar Questionário</Text>
@@ -184,6 +211,43 @@ export default function EditForm() {
                 />
               </View>
             ))}
+          </View>
+          <View style={styles.section}>
+            <Text style={styles.label}>Selecione Pacientes</Text>
+            <TextInput
+              style={[styles.input, styles.searchInput]}
+              value={patientQuery}
+              onChangeText={setPatientQuery}
+              placeholder="Buscar por nome ou email"
+            />
+            {patients.length === 0 ? (
+              <View style={styles.centered}>
+                <Ionicons name="people-outline" size={48} color="#ccc" />
+                <Text style={{ color: '#999', marginTop: 8 }}>Nenhum paciente encontrado</Text>
+              </View>
+            ) : (
+              <View>
+                {patients
+                  .filter(
+                    (p) =>
+                      p.name.toLowerCase().includes(patientQuery.toLowerCase()) ||
+                      p.email.toLowerCase().includes(patientQuery.toLowerCase())
+                  )
+                  .map((p) => (
+                    <Pressable key={p.id} onPress={() => toggleAssign(p.id)} style={styles.checkboxRow}>
+                      <Ionicons
+                        name={assignedPatientIds.includes(p.id) ? 'checkbox-outline' : 'square-outline'}
+                        size={22}
+                        color={assignedPatientIds.includes(p.id) ? '#007AFF' : '#666'}
+                      />
+                      <View style={{ marginLeft: 8 }}>
+                        <Text style={styles.checkboxLabel}>{p.name}</Text>
+                        <Text style={{ color: '#777', fontSize: 12 }}>{p.email}</Text>
+                      </View>
+                    </Pressable>
+                  ))}
+              </View>
+            )}
           </View>
         </ScrollView>
 
@@ -266,6 +330,9 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
+  searchInput: {
+    marginBottom: 12,
+  },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,5 +385,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+  },
+  checkboxLabel: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

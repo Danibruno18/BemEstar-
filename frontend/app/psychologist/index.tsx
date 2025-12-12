@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 interface Form {
   id: string;
@@ -37,7 +39,7 @@ export default function PsychologistHome() {
 
   const loadForms = async () => {
     try {
-      const response = await axios.get(`${EXPO_PUBLIC_BACKEND_URL}/api/forms`, {
+      const response = await axios.get(`${BASE_URL}/api/forms`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setForms(response.data);
@@ -62,9 +64,9 @@ export default function PsychologistHome() {
             try {
               console.log('Deletando formulário:', formId);
               console.log('Token:', token ? 'Presente' : 'Ausente');
-              console.log('URL:', `${EXPO_PUBLIC_BACKEND_URL}/api/forms/${formId}`);
+              console.log('URL:', `${BASE_URL}/api/forms/${formId}`);
               
-              const response = await axios.delete(`${EXPO_PUBLIC_BACKEND_URL}/api/forms/${formId}`, {
+              const response = await axios.delete(`${BASE_URL}/api/forms/${formId}`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
               
@@ -83,6 +85,14 @@ export default function PsychologistHome() {
   };
 
   const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Deseja realmente sair?');
+      if (confirmed) {
+        await logout();
+        router.replace('/');
+      }
+      return;
+    }
     Alert.alert('Sair', 'Deseja realmente sair?', [
       { text: 'Cancelar', style: 'cancel' },
       {
@@ -90,6 +100,7 @@ export default function PsychologistHome() {
         style: 'destructive',
         onPress: async () => {
           await logout();
+          router.replace('/');
         },
       },
     ]);

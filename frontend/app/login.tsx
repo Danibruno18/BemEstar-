@@ -27,7 +27,11 @@ export default function Login() {
     console.log('Password presente:', !!password);
     
     if (!username || !password) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+      if (Platform.OS === 'web') {
+        window.alert('Por favor, preencha todos os campos');
+      } else {
+        Alert.alert('Erro', 'Por favor, preencha todos os campos');
+      }
       return;
     }
 
@@ -36,9 +40,15 @@ export default function Login() {
     try {
       await login(username, password);
       console.log('Login bem-sucedido!');
+      router.replace('/');
     } catch (error: any) {
       console.error('Erro no login:', error);
-      Alert.alert('Erro', error.message || 'Falha ao fazer login');
+      const message = error.message || 'Falha ao fazer login';
+      if (Platform.OS === 'web') {
+        window.alert(message);
+      } else {
+        Alert.alert('Erro', message);
+      }
     } finally {
       setIsLoading(false);
       console.log('Loading finalizado');
