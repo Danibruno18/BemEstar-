@@ -12,6 +12,7 @@ import jwt
 import bcrypt
 import uuid
 import json
+import pymongo
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -150,6 +151,26 @@ security = HTTPBearer()
 # Create the main app
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+
+MONGODB_URI = os.environ.get("MONGODB_URI") or os.environ.get("MONGO_URI")
+MONGO_DB_NAME = os.environ.get("MONGO_DB", "bemestar")
+mongo_client = None
+mongo_db = None
+
+def init_mongo_architecture():
+    global mongo_client, mongo_db
+    if not MONGODB_URI:
+        return
+    mongo_client = pymongo.MongoClient(MONGODB_URI)
+    mongo_db = mongo_client.get_database(MONGO_DB_NAME)
+    mongo_db.users.create_index("username", unique=True)
+    mongo_db.users.create_index("email", unique=False)
+    mongo_db.forms.create_index("createdBy")
+    mongo_db.forms.create_index("assignedPatients")
+    mongo_db.forms.create_index([("createdBy", pymongo.ASCENDING), ("title", pymongo.ASCENDING)], unique=False)
+    mongo_db.responses.create_index("formId")
+    mongo_db.responses.create_index("patientId")
+    mongo_db.responses.create_index([("formId", pymongo.ASCENDING), ("patientId", pymongo.ASCENDING)], unique=True)
 
 # Models
 class UserRegister(BaseModel):
@@ -557,6 +578,9 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     return
+@app.on_event("startup")
+async def startup_event():
+    init_mongo_architecture()
 @api_router.get("/patients")
 async def list_patients(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "psychologist":

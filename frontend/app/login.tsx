@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,6 +64,9 @@ export default function Login() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <Image source={require('../assets/images/bemestar.png')} style={styles.logo} />
+            </View>
             <Text style={styles.title}>Bem-vindo</Text>
             <Text style={styles.subtitle}>Faça login para continuar</Text>
 
@@ -135,6 +139,15 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 256,
+    height: 256,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 32,
