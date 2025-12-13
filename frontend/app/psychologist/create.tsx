@@ -46,7 +46,7 @@ export default function CreateForm() {
   };
 
   useEffect(() => {
-    const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    const baseUrl = EXPO_PUBLIC_BACKEND_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
     const loadPatients = async () => {
       try {
         if (!token) return;
@@ -105,7 +105,7 @@ export default function CreateForm() {
       return;
     }
 
-    const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    const baseUrl = EXPO_PUBLIC_BACKEND_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
 
     if (!token) {
       if (Platform.OS === 'web') {

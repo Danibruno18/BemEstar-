@@ -13,9 +13,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import { Platform } from 'react-native';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-const BASE_URL = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
 
 interface Answer {
   questionId: string;
@@ -33,6 +34,7 @@ interface Response {
 
 export default function FormResponses() {
   const { id } = useLocalSearchParams();
+  const formId = Array.isArray(id) ? id[0] : (id || '') as string;
   const [responses, setResponses] = useState<Response[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -40,17 +42,23 @@ export default function FormResponses() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!formId || !token) return;
+    setIsLoading(true);
     loadResponses();
-  }, []);
+  }, [formId, token]);
 
   const loadResponses = async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/api/forms/${id}/responses`, {
+      const response = await axios.get(`${BASE_URL}/api/forms/${formId}/responses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setResponses(response.data);
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao carregar respostas');
+      const anyErr: any = error as any;
+      const detail = anyErr?.response?.data?.detail;
+      const status = anyErr?.response?.status;
+      const msg = detail || (status ? `Falha ao carregar respostas (status ${status})` : 'Falha ao carregar respostas');
+      Alert.alert('Erro', msg);
     } finally {
       setIsLoading(false);
     }

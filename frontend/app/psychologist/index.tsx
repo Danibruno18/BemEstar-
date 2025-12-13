@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-const BASE_URL = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
 
 interface Form {
   id: string;

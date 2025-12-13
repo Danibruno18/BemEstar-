@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
 
 interface Answer {
   questionId: string;
@@ -38,17 +39,23 @@ export default function PatientHistory() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!token) return;
+    setIsLoading(true);
     loadResponses();
-  }, []);
+  }, [token]);
 
   const loadResponses = async () => {
     try {
-      const response = await axios.get(`${EXPO_PUBLIC_BACKEND_URL}/api/responses/my`, {
+      const response = await axios.get(`${BASE_URL}/api/responses/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setResponses(response.data);
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao carregar histórico');
+      const anyErr: any = error as any;
+      const detail = anyErr?.response?.data?.detail;
+      const status = anyErr?.response?.status;
+      const msg = detail || (status ? `Falha ao carregar histórico (status ${status})` : 'Falha ao carregar histórico');
+      Alert.alert('Erro', msg);
     } finally {
       setIsLoading(false);
     }

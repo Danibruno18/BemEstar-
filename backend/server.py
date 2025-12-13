@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
+import sqlite3
 from datetime import datetime, timedelta
 import jwt
 import bcrypt
@@ -172,6 +173,359 @@ def init_mongo_architecture():
     mongo_db.responses.create_index("patientId")
     mongo_db.responses.create_index([("formId", pymongo.ASCENDING), ("patientId", pymongo.ASCENDING)], unique=True)
 
+SQLITE_FILE = str((DATA_DIR / 'bemestar.db').resolve())
+sqlite_conn = None
+
+def init_sqlite():
+    global sqlite_conn
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    sqlite_conn = sqlite3.connect(SQLITE_FILE)
+    sqlite_conn.execute("PRAGMA foreign_keys = ON;")
+    create_sqlite_tables()
+
+def create_sqlite_tables():
+    c = sqlite_conn.cursor()
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT,
+        email TEXT,
+        role TEXT,
+        isPatient INTEGER,
+        createdAt TEXT
+    );
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS forms (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        description TEXT,
+        createdBy TEXT REFERENCES users(id) ON DELETE CASCADE,
+        createdAt TEXT,
+        updatedAt TEXT
+    );
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS questions (
+        id TEXT PRIMARY KEY,
+        formId TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+        text TEXT,
+        ord INTEGER
+    );
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS form_assigned_patients (
+        formId TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+        patientId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        PRIMARY KEY(formId, patientId)
+    );
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS responses (
+        id TEXT PRIMARY KEY,
+        formId TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+        patientId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        submittedAt TEXT
+    );
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS response_answers (
+        id TEXT PRIMARY KEY,
+        responseId TEXT NOT NULL REFERENCES responses(id) ON DELETE CASCADE,
+        questionId TEXT,
+        questionText TEXT,
+        answerText TEXT
+    );
+    """)
+    c.execute("CREATE INDEX IF NOT EXISTS idx_forms_createdBy ON forms(createdBy);")
+    c.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_responses_form_patient ON responses(formId, patientId);")
+    sqlite_conn.commit()
+
+def migrate_json_to_sqlite():
+    try:
+        for u in list(db.users.values()):
+            sqlite_insert_user(u)
+        for f in list(db.forms.values()):
+            sqlite_insert_form(f)
+        for r in list(db.responses.values()):
+            sqlite_insert_response(r)
+    except Exception:
+        pass
+
+def sqlite_insert_user(user: dict):
+    try:
+        sqlite_conn.execute(
+            "INSERT OR REPLACE INTO users(id, username, password, name, email, role, isPatient, createdAt) VALUES(?,?,?,?,?,?,?,?)",
+            (
+                str(user.get("_id")),
+                user.get("username"),
+                user.get("password"),
+                user.get("name"),
+                user.get("email"),
+                user.get("role"),
+                1 if user.get("isPatient") else 0,
+                (user.get("createdAt").isoformat() if isinstance(user.get("createdAt"), datetime) else str(user.get("createdAt")))
+            )
+        )
+        sqlite_conn.commit()
+    except Exception:
+        pass
+
+def sqlite_insert_form(form: dict):
+    try:
+        sqlite_conn.execute(
+            "INSERT OR REPLACE INTO forms(id, title, description, createdBy, createdAt, updatedAt) VALUES(?,?,?,?,?,?)",
+            (
+                str(form.get("_id")),
+                form.get("title"),
+                form.get("description"),
+                str(form.get("createdBy")),
+                (form.get("createdAt").isoformat() if isinstance(form.get("createdAt"), datetime) else str(form.get("createdAt"))),
+                (form.get("updatedAt").isoformat() if isinstance(form.get("updatedAt"), datetime) else str(form.get("updatedAt")))
+            )
+        )
+        for q in form.get("questions", []):
+            sqlite_conn.execute(
+                "INSERT OR REPLACE INTO questions(id, formId, text, ord) VALUES(?,?,?,?)",
+                (
+                    q.get("id"),
+                    str(form.get("_id")),
+                    q.get("text"),
+                    q.get("order")
+                )
+            )
+        for pid in form.get("assignedPatients", []):
+            sqlite_conn.execute(
+                "INSERT OR IGNORE INTO form_assigned_patients(formId, patientId) VALUES(?,?)",
+                (str(form.get("_id")), str(pid))
+            )
+        sqlite_conn.commit()
+    except Exception:
+        pass
+
+def sqlite_insert_response(resp: dict):
+    try:
+        sqlite_conn.execute(
+            "INSERT OR REPLACE INTO responses(id, formId, patientId, submittedAt) VALUES(?,?,?,?)",
+            (
+                str(resp.get("_id")),
+                str(resp.get("formId")),
+                str(resp.get("patientId")),
+                (resp.get("submittedAt").isoformat() if isinstance(resp.get("submittedAt"), datetime) else str(resp.get("submittedAt")))
+            )
+        )
+        for a in resp.get("answers", []):
+            sqlite_conn.execute(
+                "INSERT OR REPLACE INTO response_answers(id, responseId, questionId, questionText, answerText) VALUES(?,?,?,?,?)",
+                (
+                    uuid.uuid4().hex,
+                    str(resp.get("_id")),
+                    a.get("questionId"),
+                    a.get("questionText"),
+                    a.get("answerText")
+                )
+            )
+        sqlite_conn.commit()
+    except Exception:
+        pass
+
+def sqlite_update_form(form_id: str, updated: dict):
+    try:
+        fields = []
+        values = []
+        if "title" in updated:
+            fields.append("title = ?")
+            values.append(updated.get("title"))
+        if "description" in updated:
+            fields.append("description = ?")
+            values.append(updated.get("description"))
+        if "updatedAt" in updated:
+            val = updated.get("updatedAt")
+            val = (val.isoformat() if isinstance(val, datetime) else str(val))
+            fields.append("updatedAt = ?")
+            values.append(val)
+        if fields:
+            values.append(form_id)
+            sqlite_conn.execute(f"UPDATE forms SET {', '.join(fields)} WHERE id = ?", tuple(values))
+        if "questions" in updated:
+            sqlite_conn.execute("DELETE FROM questions WHERE formId = ?", (form_id,))
+            for q in (updated.get("questions") or []):
+                sqlite_conn.execute(
+                    "INSERT OR REPLACE INTO questions(id, formId, text, ord) VALUES(?,?,?,?)",
+                    (q.get("id"), form_id, q.get("text"), q.get("order"))
+                )
+        if "assignedPatients" in updated:
+            sqlite_conn.execute("DELETE FROM form_assigned_patients WHERE formId = ?", (form_id,))
+            for pid in (updated.get("assignedPatients") or []):
+                sqlite_conn.execute(
+                    "INSERT OR IGNORE INTO form_assigned_patients(formId, patientId) VALUES(?,?)",
+                    (form_id, str(pid))
+                )
+        sqlite_conn.commit()
+    except Exception:
+        pass
+
+def sqlite_delete_form(form_id: str):
+    try:
+        rows = sqlite_conn.execute("SELECT id FROM responses WHERE formId = ?", (form_id,)).fetchall()
+        for r in rows:
+            sqlite_conn.execute("DELETE FROM response_answers WHERE responseId = ?", (r[0],))
+        sqlite_conn.execute("DELETE FROM responses WHERE formId = ?", (form_id,))
+        sqlite_conn.execute("DELETE FROM questions WHERE formId = ?", (form_id,))
+        sqlite_conn.execute("DELETE FROM form_assigned_patients WHERE formId = ?", (form_id,))
+        sqlite_conn.execute("DELETE FROM forms WHERE id = ?", (form_id,))
+        sqlite_conn.commit()
+    except Exception:
+        pass
+
+def sqlite_get_forms_for_psychologist(psych_id: str):
+    try:
+        if not sqlite_conn:
+            return None
+        c = sqlite_conn.cursor()
+        rows = c.execute(
+            "SELECT id, title, description, createdAt, updatedAt FROM forms WHERE createdBy = ?",
+            (psych_id,)
+        ).fetchall()
+        result = []
+        for r in rows:
+            fid = r[0]
+            rc = c.execute("SELECT COUNT(1) FROM responses WHERE formId = ?", (fid,)).fetchone()[0]
+            qc = c.execute("SELECT COUNT(1) FROM questions WHERE formId = ?", (fid,)).fetchone()[0]
+            result.append({
+                "id": str(fid),
+                "title": r[1],
+                "description": r[2] or "",
+                "questionCount": qc or 0,
+                "responseCount": rc or 0,
+                "createdAt": r[3],
+                "updatedAt": r[4],
+            })
+        return result
+    except Exception:
+        return None
+
+def sqlite_get_form_by_id(form_id: str):
+    try:
+        if not sqlite_conn:
+            return None
+        c = sqlite_conn.cursor()
+        f = c.execute(
+            "SELECT id, title, description, createdBy, createdAt, updatedAt FROM forms WHERE id = ?",
+            (form_id,)
+        ).fetchone()
+        if not f:
+            return None
+        qs = c.execute(
+            "SELECT id, text, ord FROM questions WHERE formId = ? ORDER BY ord ASC",
+            (form_id,)
+        ).fetchall()
+        aps = c.execute(
+            "SELECT patientId FROM form_assigned_patients WHERE formId = ?",
+            (form_id,)
+        ).fetchall()
+        return {
+            "_id": f[0],
+            "title": f[1],
+            "description": f[2] or "",
+            "createdBy": f[3],
+            "createdAt": f[4],
+            "updatedAt": f[5],
+            "questions": [{"id": q[0], "text": q[1], "order": int(q[2] or 0)} for q in qs],
+            "assignedPatients": [str(a[0]) for a in aps],
+        }
+    except Exception:
+        return None
+
+def sqlite_get_patient_available_forms(patient_id: str):
+    try:
+        if not sqlite_conn:
+            return None
+        c = sqlite_conn.cursor()
+        responded = [row[0] for row in c.execute(
+            "SELECT formId FROM responses WHERE patientId = ?",
+            (patient_id,)
+        ).fetchall()]
+        ph = c.execute(
+            "SELECT f.id, f.title, f.description, f.createdBy, f.createdAt FROM forms f JOIN form_assigned_patients ap ON ap.formId = f.id WHERE ap.patientId = ?",
+            (patient_id,)
+        ).fetchall()
+        result = []
+        for r in ph:
+            fid = r[0]
+            if str(fid) in set(str(x) for x in responded):
+                continue
+            qc = c.execute("SELECT COUNT(1) FROM questions WHERE formId = ?", (fid,)).fetchone()[0]
+            p = c.execute("SELECT name FROM users WHERE id = ?", (r[3],)).fetchone()
+            result.append({
+                "id": str(fid),
+                "title": r[1],
+                "description": r[2] or "",
+                "questionCount": qc or 0,
+                "psychologistName": (p[0] if p else "Unknown"),
+                "createdAt": r[4],
+            })
+        return result
+    except Exception:
+        return None
+
+def sqlite_get_form_responses(form_id: str):
+    try:
+        if not sqlite_conn:
+            return None
+        c = sqlite_conn.cursor()
+        rows = c.execute(
+            "SELECT id, patientId, submittedAt FROM responses WHERE formId = ?",
+            (form_id,)
+        ).fetchall()
+        result = []
+        for r in rows:
+            rid = r[0]
+            p = c.execute("SELECT name, email FROM users WHERE id = ?", (r[1],)).fetchone()
+            ans = c.execute(
+                "SELECT questionId, questionText, answerText FROM response_answers WHERE responseId = ?",
+                (rid,)
+            ).fetchall()
+            result.append({
+                "id": str(rid),
+                "patientName": (p[0] if p else "Unknown"),
+                "patientEmail": (p[1] if p else "Unknown"),
+                "answers": [{"questionId": a[0], "questionText": a[1], "answerText": a[2]} for a in ans],
+                "submittedAt": r[2],
+            })
+        return result
+    except Exception:
+        return None
+
+def sqlite_get_my_responses(patient_id: str):
+    try:
+        if not sqlite_conn:
+            return None
+        c = sqlite_conn.cursor()
+        rows = c.execute(
+            "SELECT id, formId, submittedAt FROM responses WHERE patientId = ?",
+            (patient_id,)
+        ).fetchall()
+        result = []
+        for r in rows:
+            rid = r[0]
+            ft = c.execute("SELECT title FROM forms WHERE id = ?", (r[1],)).fetchone()
+            ans = c.execute(
+                "SELECT questionText, answerText FROM response_answers WHERE responseId = ?",
+                (rid,)
+            ).fetchall()
+            result.append({
+                "id": str(rid),
+                "formTitle": (ft[0] if ft else "Unknown Form"),
+                "answers": [{"questionText": a[0], "answerText": a[1]} for a in ans],
+                "submittedAt": r[2],
+            })
+        return result
+    except Exception:
+        return None
+
 # Models
 class UserRegister(BaseModel):
     username: str
@@ -269,6 +623,10 @@ async def register(user_data: UserRegister):
     }
     db.users[user_id] = user
     save_users()
+    try:
+        sqlite_insert_user(user)
+    except Exception:
+        pass
     
     access_token = create_access_token(data={"sub": str(user["_id"]), "role": user["role"]})
     
@@ -348,6 +706,10 @@ async def create_form(form_data: FormCreate, current_user: dict = Depends(get_cu
     }
     db.forms[form_id] = form
     save_forms()
+    try:
+        sqlite_insert_form(form)
+    except Exception:
+        pass
     
     return {
         "id": str(form["_id"]),
@@ -363,8 +725,10 @@ async def get_forms(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "psychologist":
         raise HTTPException(status_code=403, detail="Only psychologists can view their forms")
     
-    forms = [f for f in db.forms.values() if f.get("createdBy") == str(current_user["_id"])]
-    
+    res = sqlite_get_forms_for_psychologist(str(current_user["_id"]))
+    if res is not None:
+        return res
+    forms = [f for f in db.forms.values() if f.get("createdBy") == str(current_user["_id"]) ]
     result = []
     for form in forms:
         response_count = sum(1 for r in db.responses.values() if r.get("formId") == str(form["_id"]))
@@ -377,21 +741,32 @@ async def get_forms(current_user: dict = Depends(get_current_user)):
             "createdAt": form["createdAt"].isoformat(),
             "updatedAt": form["updatedAt"].isoformat()
         })
-    
     return result
 
 @api_router.get("/forms/{form_id}")
 async def get_form(form_id: str, current_user: dict = Depends(get_current_user)):
+    f_sql = sqlite_get_form_by_id(form_id)
+    if f_sql is not None:
+        if current_user["role"] == "psychologist" and str(f_sql["createdBy"]) != str(current_user["_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if is_patient_role(current_user["role"]) and str(current_user["_id"]) not in f_sql.get("assignedPatients", []):
+            raise HTTPException(status_code=403, detail="Form not assigned to you")
+        return {
+            "id": str(f_sql["_id"]),
+            "title": f_sql["title"],
+            "description": f_sql.get("description", ""),
+            "questions": f_sql.get("questions", []),
+            "assignedPatients": f_sql.get("assignedPatients", []),
+            "createdAt": str(f_sql["createdAt"]),
+            "updatedAt": str(f_sql["updatedAt"]),
+        }
     form = db.forms.get(form_id)
-    
     if not form:
         raise HTTPException(status_code=404, detail="Form not found")
-    
     if current_user["role"] == "psychologist" and form["createdBy"] != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Not authorized")
     if is_patient_role(current_user["role"]) and str(current_user["_id"]) not in form.get("assignedPatients", []):
         raise HTTPException(status_code=403, detail="Form not assigned to you")
-    
     return {
         "id": str(form["_id"]),
         "title": form["title"],
@@ -434,6 +809,16 @@ async def update_form(form_id: str, form_data: FormUpdate, current_user: dict = 
     db.forms[form_id].update(update_data)
     updated_form = db.forms.get(form_id)
     save_forms()
+    try:
+        sqlite_update_form(form_id, {
+            "title": update_data.get("title"),
+            "description": update_data.get("description"),
+            "updatedAt": update_data.get("updatedAt"),
+            "questions": updated_form.get("questions"),
+            "assignedPatients": updated_form.get("assignedPatients")
+        })
+    except Exception:
+        pass
     return {
         "id": str(updated_form["_id"]),
         "title": updated_form["title"],
@@ -459,6 +844,10 @@ async def delete_form(form_id: str, current_user: dict = Depends(get_current_use
     db.responses = {rid: r for rid, r in db.responses.items() if r.get("formId") != form_id}
     save_forms()
     save_responses()
+    try:
+        sqlite_delete_form(form_id)
+    except Exception:
+        pass
     
     return {"message": "Form deleted successfully"}
 
@@ -466,17 +855,19 @@ async def delete_form(form_id: str, current_user: dict = Depends(get_current_use
 async def get_form_responses(form_id: str, current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "psychologist":
         raise HTTPException(status_code=403, detail="Only psychologists can view responses")
-    
+    f_sql = sqlite_get_form_by_id(form_id)
+    if f_sql is not None:
+        if str(f_sql.get("createdBy")) != str(current_user["_id"]):
+            raise HTTPException(status_code=403, detail="Not authorized")
+        res = sqlite_get_form_responses(form_id)
+        if res is not None:
+            return res
     form = db.forms.get(form_id)
-    
     if not form:
         raise HTTPException(status_code=404, detail="Form not found")
-    
     if form["createdBy"] != str(current_user["_id"]):
         raise HTTPException(status_code=403, detail="Not authorized")
-    
     responses = [r for r in db.responses.values() if r.get("formId") == form_id]
-    
     result = []
     for response in responses:
         patient = db.users.get(response["patientId"])
@@ -487,7 +878,6 @@ async def get_form_responses(form_id: str, current_user: dict = Depends(get_curr
             "answers": response["answers"],
             "submittedAt": response["submittedAt"].isoformat()
         })
-    
     return result
 
 # Patient routes
@@ -495,10 +885,11 @@ async def get_form_responses(form_id: str, current_user: dict = Depends(get_curr
 async def get_available_forms(current_user: dict = Depends(get_current_user)):
     if not is_patient_role(current_user["role"]):
         raise HTTPException(status_code=403, detail="Only patients can view available forms")
-    
-    responded_form_ids = {r.get("formId") for r in db.responses.values() if r.get("patientId") == str(current_user["_id"])}
+    res = sqlite_get_patient_available_forms(str(current_user["_id"]))
+    if res is not None:
+        return res
+    responded_form_ids = {r.get("formId") for r in db.responses.values() if r.get("patientId") == str(current_user["_id"]) }
     forms = [f for f in db.forms.values() if str(f.get("_id")) not in responded_form_ids and str(current_user["_id"]) in f.get("assignedPatients", [])]
-    
     result = []
     for form in forms:
         psychologist = db.users.get(form["createdBy"])
@@ -510,7 +901,6 @@ async def get_available_forms(current_user: dict = Depends(get_current_user)):
             "psychologistName": psychologist["name"] if psychologist else "Unknown",
             "createdAt": form["createdAt"].isoformat()
         })
-    
     return result
 
 @api_router.post("/responses")
@@ -543,6 +933,10 @@ async def submit_response(response_data: ResponseCreate, current_user: dict = De
     response["_id"] = response_id
     db.responses[response_id] = response
     save_responses()
+    try:
+        sqlite_insert_response(response)
+    except Exception:
+        pass
     
     return {
         "id": str(response_id),
@@ -553,9 +947,10 @@ async def submit_response(response_data: ResponseCreate, current_user: dict = De
 async def get_my_responses(current_user: dict = Depends(get_current_user)):
     if not is_patient_role(current_user["role"]):
         raise HTTPException(status_code=403, detail="Only patients can view their responses")
-    
-    responses = [r for r in db.responses.values() if r.get("patientId") == str(current_user["_id"])]
-    
+    res = sqlite_get_my_responses(str(current_user["_id"]))
+    if res is not None:
+        return res
+    responses = [r for r in db.responses.values() if r.get("patientId") == str(current_user["_id"]) ]
     result = []
     for response in responses:
         result.append({
@@ -564,7 +959,6 @@ async def get_my_responses(current_user: dict = Depends(get_current_user)):
             "answers": response["answers"],
             "submittedAt": response["submittedAt"].isoformat()
         })
-    
     return result
 
 # NOTE: router inclusion and middleware registration moved to end of file
@@ -581,6 +975,8 @@ async def shutdown_db_client():
 @app.on_event("startup")
 async def startup_event():
     init_mongo_architecture()
+    init_sqlite()
+    migrate_json_to_sqlite()
 @api_router.get("/patients")
 async def list_patients(current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "psychologist":

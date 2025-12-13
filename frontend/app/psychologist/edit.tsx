@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
 const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const BASE_URL = EXPO_PUBLIC_BACKEND_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000');
 
 interface Question {
   id: string;
@@ -54,8 +55,7 @@ export default function EditForm() {
 
   const loadForm = async () => {
     try {
-      const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const response = await axios.get(`${baseUrl}/api/forms/${id}`, {
+      const response = await axios.get(`${BASE_URL}/api/forms/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTitle(response.data.title);
@@ -72,10 +72,9 @@ export default function EditForm() {
 
   const loadPatients = async () => {
     try {
-      const baseUrl = EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       if (!token) return;
       setPatientsError('');
-      const res = await axios.get(`${baseUrl}/api/patients`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get(`${BASE_URL}/api/patients`, { headers: { Authorization: `Bearer ${token}` } });
       setPatients(res.data);
     } catch (error: any) {
       const status = error?.response?.status;
@@ -127,7 +126,7 @@ export default function EditForm() {
     setIsSaving(true);
     try {
       await axios.put(
-        `${EXPO_PUBLIC_BACKEND_URL}/api/forms/${id}`,
+        `${BASE_URL}/api/forms/${id}`,
         {
           title,
           description,
